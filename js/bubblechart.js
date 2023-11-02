@@ -162,3 +162,5 @@ var popLine = labels.append("tspan")
     .text(function(d){
         return "Pop. " + format(d.population); //use format generator to format numbers
     });
+
+    
