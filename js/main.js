@@ -17,10 +17,10 @@ function setMap() {
 
     //create Albers equal area conic projection centered on France
     var projection = d3.geoAlbers()
-        .center([38, 97])
-        .rotate([90, 1, 0])
-        .parallels([45,45])
-        .scale(300)
+        .center([20,97])
+        .rotate([0, 1, 0])
+        .parallels([-20,30])
+        .scale(200)
         .translate([width / 2, height / 2]);
 
        
@@ -45,9 +45,8 @@ var path = d3.geoPath()
     console.log(States);
     
    //translate europe TopoJSON
-   var stateLines = topojson.feature(States, States.objects.States1);
    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces)
-   
+   var stateLines = topojson.feature(States, States.objects.States1);
    console.log(Provinces)
    console.log(States)
    console.log(provinceLines)
@@ -73,7 +72,13 @@ var gratLines = map.selectAll(".gratLines") //select graticule elements that wil
 .attr("class", "gratLines") //assign class for styling
 .attr("d", path); //project graticule lines
 
-
+//create graticule lines
+var gratLines = map.selectAll(".gratLines") //select graticule elements that will be created
+.data(graticule.lines()) //bind graticule lines to each element to be created
+.enter() //create an element for each datum
+.append("path") //append each element to the svg as a path element
+.attr("class", "gratLines") //assign class for styling
+.attr("d", path); //project graticule lines
  //add Europe countries to map
  var countries = map.append("path")
  .datum(provinceLines)
