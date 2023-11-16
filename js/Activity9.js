@@ -1,11 +1,4 @@
-(function(){
-
-    //pseudo-global variables
-    var attrArray = ["NAME", "Percent_To", "varC", "vPercent__1", "Percent__2","Percent_2","Percent_3","Percent_4", "Total_Tot"]; //list of attributes
-    var expressed = attrArray[0]; //initial attribute
-    
 window.onload = setMap();
-
 //set up choropleth map
 function setMap() {
     //use Promise.all to parallelize asynchronous data loading
@@ -25,7 +18,7 @@ function setMap() {
         .translate([width / 2, height / 2]);
     //create path generator
     var path = d3.geoPath().projection(projection);
-    //use Promise.all to parallelize asynchronous data loading})(); //last line of main.js
+    //use Promise.all to parallelize asynchronous data loading
     var promises = [];
     promises.push(d3.csv("data/States.csv")); //load attributes from csv
     promises.push(d3.json("data/Provinces.topojson")); //load background spatial data
@@ -38,32 +31,61 @@ function setMap() {
             States = data[2];
     console.log(Provinces);
     console.log(States);
-    //place graticule on the map
-    setGraticule(map, path);
-
    //translate europe TopoJSON
    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces)
    var stateLines = topojson.feature(States, States.objects.States1);
-
    console.log(Provinces)
    console.log(States)
    console.log(provinceLines)
    console.log(stateLines)
-
-   //add countries to map
- var countries = map.append("path")
- .datum(provinceLines)
- .attr("GEOID", "NAME")
- .attr("d", path);
-
- //join csv data to GeoJSON enumeration units
- stateLines = joinData(stateLines, csvStates);
- //add enumeration units to the map
- setEnumerationUnits(stateLines, map, path);
-};
-};//end of setMap()
-
-function setGraticule(map, path){
+    // Variables for data join
+    var attrArray = ["NAME", "Percent_To", "varC", "vPercent__1", "Percent__2","Percent_2","Percent_3","Percent_4", "Total_Tot"]; // replace with your actual attributes
+    // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
+    for (var i = 0; i < csvStates.length; i++) {
+        var csvState = csvStates[i]; // The current state
+        var csvKey = csvState.adm1_code; // The CSV primary key
+        // Loop through GeoJSON states to find correct state
+        for (var a = 0; a < stateLines.length; a++) {
+            var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
+            var geojsonKey = geojsonProps.adm1_code; // The GeoJSON primary key
+            // Where primary keys match, transfer CSV data to GeoJSON properties object
+            if (geojsonKey == csvKey) {
+                // Assign all attributes and values
+                attrArray.forEach(function(attr){
+                    var val = parseFloat(csvState[attr]); // Get CSV attribute value
+                    geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
+                });
+            }
+        }
+    }
+}function callback(data){
+    var csvStates = data[0],
+        Provinces = data[1],
+        States = data[2];
+    // Translate TopoJSON
+    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces).features;
+    var stateLines = topojson.feature(States, States.objects.States1).features;
+    // Variables for data join
+    var attrArray = ["NAME", "Percent_To", "varC", "vPercent__1", "Percent__2","Percent_2","Percent_3","Percent_4", "Total_Tot"]; // replace with your actual attributes
+    // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
+    for (var i = 0; i < csvStates.length; i++) {
+        var csvState = csvStates[i]; // The current state
+        var csvKey = csvState.adm1_code; // The CSV primary key
+        // Loop through GeoJSON states to find correct state
+        for (var a = 0; a < stateLines.length; a++) {
+            var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
+            var geojsonKey = geojsonProps.adm1_code; // The GeoJSON primary key
+            // Where primary keys match, transfer CSV data to GeoJSON properties object
+            if (geojsonKey == csvKey) {
+                // Assign all attributes and values
+                attrArray.forEach(function(attr){
+                    var val = parseFloat(csvState[attr]); // Get CSV attribute value
+                    geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
+                });
+            }
+        }
+    }
+    
     // Continue with your map creation code...
 //create graticule generator
 var graticule = d3.geoGraticule()
@@ -87,34 +109,16 @@ var gratLines = map.selectAll(".gratLines") //select graticule elements that wil
 .append("path") //append each element to the svg as a path element
 .attr("class", "gratLines") //assign class for styling
 .attr("d", path); //project graticule lines
-}; 
+ //add countries to map
+ var countries = map.append("path")
+ .datum(provinceLines)
+ .attr("GEOID", "NAME")
+ .attr("d", path);
 
-function joinData(stateLines, csvStates){
-    
-    // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
-    for (var i = 0; i < csvStates.length; i++) {
-        var csvState = csvStates[i]; // The current state
-        var csvKey = csvState.adm1_code; // The CSV primary key
-        // Loop through GeoJSON states to find correct state
-        for (var a = 0; a < stateLines.length; a++) {
-            var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
-            var geojsonKey = geojsonProps.adm1_code; // The GeoJSON primary key
-            // Where primary keys match, transfer CSV data to GeoJSON properties object
-            if (geojsonKey == csvKey) {
-                // Assign all attributes and values
-                attrArray.forEach(function(attr){
-                    var val = parseFloat(csvState[attr]); // Get CSV attribute value
-                    geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
-                });
-            }
-        }
-    }
-return stateLines;
-};
-function setEnumerationUnits(stateLines, map, path){
+ 
 //add states to map
 var regions = map.selectAll(".regions")
- .data(stateLines)
+ .data(provinceLines)
  .enter()
  .append("path")
  .attr("NAME", function(d){
@@ -133,7 +137,11 @@ map.selectAll(".province")
     .enter().append("path")
     .attr("class", "province")
     .attr("d", path);
-};
+}};
 
-}
-)(); //last line of main.js
+
+
+
+
+
+
