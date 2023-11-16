@@ -40,6 +40,7 @@ function setMap() {
     console.log(States);
     //place graticule on the map
     setGraticule(map, path);
+    
 
    //translate europe TopoJSON
    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces)
@@ -58,6 +59,10 @@ function setMap() {
 
  //join csv data to GeoJSON enumeration units
  stateLines = joinData(stateLines, csvStates);
+//create the color scale
+var colorScale = makeColorScale(csvData);
+
+
  //add enumeration units to the map
  setEnumerationUnits(stateLines, map, path);
 };
@@ -106,12 +111,12 @@ function joinData(stateLines, csvStates){
                     var val = parseFloat(csvState[attr]); // Get CSV attribute value
                     geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
                 });
-            }
-        }
-    }
+            };
+        };
+    };
 return stateLines;
 };
-function setEnumerationUnits(stateLines, map, path){
+function setEnumerationUnits(stateLines, map, path,colorScale){
 //add states to map
 var regions = map.selectAll(".regions")
  .data(stateLines)
@@ -120,7 +125,16 @@ var regions = map.selectAll(".regions")
  .attr("NAME", function(d){
      return "regions " + d.properties.adm1_code;
  })
- .attr("d", path);
+ .attr("d", path)
+ .style("fill", function(d){
+    var value = d.properties[expressed];            
+                if(value) {          
+    return colorScale(d.properties[expressed]);
+} else {                
+    return "#ccc";            
+}    
+});
+}
 // Add state lines
 map.selectAll(".state")
     .data(stateLines.features)
@@ -133,7 +147,43 @@ map.selectAll(".province")
     .enter().append("path")
     .attr("class", "province")
     .attr("d", path);
-};
 
+//function to create color scale generator
+function makeColorScale(data){
+    var colorClasses = [
+        "#D4B9DA",
+        "#C994C7",
+        "#DF65B0",
+        "#DD1C77",
+        "#980043"
+    ];
+
+    //create color scale generator
+    var colorScale = d3.scaleQuantile()
+        .range(colorClasses);
+
+    //build array of all values of the expressed attribute
+    var domainArray = [];
+    for (var i=0; i<data.length; i++){
+        var val = parseFloat(data[i][expressed]);
+        domainArray.push(val);
+    };
+
+
+    //cluster data using ckmeans clustering algorithm to create natural breaks
+    var clusters = ss.ckmeans(domainArray, 5);
+    //reset domain array to cluster minimums
+    domainArray = clusters.map(function(d){
+        return d3.min(d);
+    });
+    //remove first value from domain array to create class breakpoints
+    domainArray.shift();
+
+
+    //assign array of expressed values as scale domain
+    colorScale.domain(domainArray);
+
+    return colorScale;
+};
 }
 )(); //last line of main.js
