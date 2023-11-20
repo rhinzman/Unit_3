@@ -46,21 +46,21 @@ setGraticule(map, path);
 
    //translate europe TopoJSON
    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces);
-   var stateLines = topojson.feature(States, States.objects.States1);
+//    var stateLines = topojson.feature(States, States.objects.States1);
    
    console.log(Provinces)
    console.log(States)
    console.log(provinceLines)
-   console.log(stateLines)
+//    console.log(stateLines)
    
    //add states to map
    var countries = map.append("path")
-   .datum(stateLines)
+   .datum(provinceLines)
    .attr("GEOID", "NAME")
    .attr("d", path);
  
 
- stateLines= joinData(stateLines, csvStates);
+ stateLines= joinData(provinceLines, csvStates);
  //add enumeration units to the map
  setEnumerationUnits(stateLines, map, path,colorScale);
  //create the color scale
@@ -98,11 +98,11 @@ function joinData(stateLines, csvStates){
     // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
     for (var i = 0; i < csvStates.length; i++) {
         var csvState = csvStates[i]; // The current state
-        var csvKey = csvState.GEOID; // The CSV primary key
+        var csvKey = csvState.name; // The CSV primary key
         // Loop through GeoJSON states to find correct state
         for (var a = 0; a < stateLines.length; a++) {
             var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
-            var geojsonKey = geojsonProps.GEOID; // The GeoJSON primary key
+            var geojsonKey = geojsonProps.name; // The GeoJSON primary key
             // Where primary keys match, transfer CSV data to GeoJSON properties object
             if (geojsonKey == csvKey) {
                 // Assign all attributes and values
@@ -156,8 +156,8 @@ function setEnumerationUnits(stateLines, map, path,colorScale){
   .data(provinceLines)
   .enter()
   .append("path")
-  .attr("NAME", function(d){
-      return "regions " + d.properties.GEOID;
+  .attr("name", function(d){
+      return "regions " + d.properties.name;
   })
   .attr("d", path)
   .style("fill", function(d){
@@ -167,7 +167,7 @@ function setEnumerationUnits(stateLines, map, path,colorScale){
  map.selectAll(".state")
      .data(stateLines.features)
      .enter().append("path")
-     .attr("class", "state")
+     .attr("class", "province")
      .attr("d", path);
  // Add province lines
  map.selectAll(".province")
