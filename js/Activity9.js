@@ -11,10 +11,10 @@ function setMap() {
         .attr("class", "map")
         .attr("width", width)
         .attr("height", height);
-    
-    //create Robinson projection
-    var projection = d3.geoRobinson()
-        .scale(150)
+    //create Albers equal area conic projection centered on France
+    var projection = d3.geoAlbers()
+
+        .scale(300)
         .translate([width / 2, height / 2]);
     //create path generator
     var path = d3.geoPath().projection(projection);
@@ -24,24 +24,29 @@ function setMap() {
     promises.push(d3.json("data/Provinces.topojson")); //load background spatial data
     promises.push(d3.json("data/States.topojson")); //load choropleth spatial data
     Promise.all(promises).then(callback);
-
-function callback(data){
-    var csvStates = data[0],
-        Provinces = data[1],
-        States = data[2];
-    // Translate TopoJSON
-    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces).features;
-    var stateLines = topojson.feature(States, States.objects.States1).features;
+    function callback(data){
+        var csvStates = data[0],
+            Provinces = data[1],
+            States = data[2];
+    console.log(Provinces);
+    console.log(States);
+   //translate europe TopoJSON
+   var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces)
+   var stateLines = topojson.feature(States, States.objects.States);
+   console.log(Provinces)
+   console.log(States)
+   console.log(provinceLines)
+   console.log(stateLines)
     // Variables for data join
-    var attrArray = ["GEOID","NAME", "Percent_To","Percent__1","Percent_2","Percent_3","Percent_4", "Total_Tot"]; // replace with your actual attributes
+    var attrArray = ["ID","P_Art","P_Business","P_HE","P_Sience","P_related", "P_total","name"]; // replace with your actual attributes
     // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
     for (var i = 0; i < csvStates.length; i++) {
         var csvState = csvStates[i]; // The current state
-        var csvKey = csvState.NAME; // The CSV primary key
+        var csvKey = csvState.Name; // The CSV primary key
         // Loop through GeoJSON states to find correct state
         for (var a = 0; a < stateLines.length; a++) {
             var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
-            var geojsonKey = geojsonProps.NAME; // The GeoJSON primary key
+            var geojsonKey = geojsonProps.name; // The GeoJSON primary key
             // Where primary keys match, transfer CSV data to GeoJSON properties object
             if (geojsonKey == csvKey) {
                 // Assign all attributes and values
@@ -52,7 +57,33 @@ function callback(data){
             }
         }
     }
-    
+}function callback(data){
+    var csvStates = data[0],
+        Provinces = data[1],
+        States = data[2];
+    // Translate TopoJSON
+    var provinceLines = topojson.feature(Provinces, Provinces.objects.Provinces).features;
+    var stateLines = topojson.feature(States, States.objects.States).features;
+    // Variables for data join
+    var attrArray = ["varA", "varB", "varC", "varD", "varE"]; // replace with your actual attributes
+    // Loop through CSV data to assign each set of CSV attribute values to GeoJSON state
+    for (var i = 0; i < csvStates.length; i++) {
+        var csvState = csvStates[i]; // The current state
+        var csvKey = csvState.adm1_code; // The CSV primary key
+        // Loop through GeoJSON states to find correct state
+        for (var a = 0; a < stateLines.length; a++) {
+            var geojsonProps = stateLines[a].properties; // The current state GeoJSON properties
+            var geojsonKey = geojsonProps.adm1_code; // The GeoJSON primary key
+            // Where primary keys match, transfer CSV data to GeoJSON properties object
+            if (geojsonKey == csvKey) {
+                // Assign all attributes and values
+                attrArray.forEach(function(attr){
+                    var val = parseFloat(csvState[attr]); // Get CSV attribute value
+                    geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
+                });
+            }
+        }
+    }
     // Continue with your map creation code...
 //create graticule generator
 var graticule = d3.geoGraticule()
@@ -76,39 +107,31 @@ var gratLines = map.selectAll(".gratLines") //select graticule elements that wil
 .append("path") //append each element to the svg as a path element
 .attr("class", "gratLines") //assign class for styling
 .attr("d", path); //project graticule lines
- //add countries to map
+ //add Europe countries to map
  var countries = map.append("path")
  .datum(provinceLines)
- .attr("GEOID", "NAME")
+ .attr("class", "Name")
  .attr("d", path);
-
- 
-//add states to map
+ console.log(countries);
+//add France regions to map
 var regions = map.selectAll(".regions")
  .data(provinceLines)
  .enter()
  .append("path")
- .attr("NAME", function(d){
-     return "regions " + d.properties.GEOID;
+ .attr("name", function(d){
+     return "regions " + d.properties.name;
  })
  .attr("d", path);
 // Add state lines
 map.selectAll(".state")
     .data(stateLines.features)
     .enter().append("path")
-    .attr("class", "NAME")
+    .attr("class", "state")
     .attr("d", path);
-//Add province lines
+// Add province lines
 map.selectAll(".province")
     .data(provinceLines.features)
     .enter().append("path")
     .attr("class", "province")
     .attr("d", path);
 }};
-
-
-
-
-
-
-
