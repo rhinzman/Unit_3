@@ -98,7 +98,7 @@ function setChart(csvStates, colorScale){
         .enter()
         .append("rect")
         .attr("class", function(d){
-            return "bars " + d.Name;
+            return "bars " + d.name;
         })
         .attr("width", chartWidth / csvStates.length - 1)
         .attr("x", function(d, i){
