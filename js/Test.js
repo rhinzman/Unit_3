@@ -75,6 +75,10 @@ setChart(csvStates, colorScale);
 
 //function to create coordinated bar chart
 function setChart(csvStates, colorScale){
+
+    //setting default values for chart
+    var expressed = "P_Art";
+
     //chart frame dimensions
     var chartWidth = 650,
         chartHeight = 460;
@@ -89,7 +93,7 @@ function setChart(csvStates, colorScale){
 
     //create a scale to size bars proportionally to frame
     var yScale = d3.scaleLinear()
-        .range([0, chartHeight])
+        .range([chartHeight, 0])
         .domain([0, 105]);
         
     //set bars for each province
@@ -98,13 +102,22 @@ function setChart(csvStates, colorScale){
         .enter()
         .append("rect")
         .attr("class", function(d){
-            return "bars " + d.Name;
+            return "bars " + d.name;
         })
         .attr("width", chartWidth / csvStates.length - 1)
         .attr("x", function(d, i){
             return i * (chartWidth / csvStates.length);
         })
         .attr("y", function(d){
+            console.log('expressed variable:', expressed);
+            console.log('expressed:', d[expressed], 'parsed:', parseFloat(d[expressed]));
+            console.log('data object:', d);
+
+             var height = yScale(parseFloat(d[expressed]));
+             console.log('height:', height);
+            return height;
+        })
+        .attr("height", function(d){
             return chartHeight - yScale(parseFloat(d[expressed]));
         });
         

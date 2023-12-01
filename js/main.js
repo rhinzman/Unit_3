@@ -30,7 +30,7 @@ function setMap() {
 
     //use Promise.all to parallelize asynchronous data loading
     var promises = [];
-    promises.push(d3.csv("data/States.csv")); //load attributes from csv
+    promises.push(d3.csv("data/States1.csv")); //load attributes from csv
     promises.push(d3.json("data/Provinces.topojson")); //load background spatial data
     promises.push(d3.json("data/States.topojson")); //load choropleth spatial data
     Promise.all(promises).then(callback);
@@ -62,22 +62,27 @@ function setMap() {
 //create the color scale
 var colorScale = makeColorScale(csvStates);
 
-// console.log('here is the colorscale',colorScale);
+//add coordinated visualization to the map
 setChart(csvStates, colorScale);
 
  //add enumeration units to the map
  setEnumerationUnits(provinceLines, stateLines, map, path, colorScale);
 };
-//add coordinated visualization to the map
-
 
 }; //end of setMap()
 
 //function to create coordinated bar chart
 function setChart(csvStates, colorScale){
+    var expressed="P_Art";
     //chart frame dimensions
-    var chartWidth = 650,
+    var chartWidth = window.innerWidth * 0.4,
         chartHeight = 460;
+        leftPadding = 25,
+        rightPadding = 2,
+        topBottomPadding = 5,
+        chartInnerWidth = chartWidth - leftPadding - rightPadding,
+        chartInnerHeight = chartHeight - topBottomPadding * 2,
+        translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
     //create a second svg element to hold the bar chart
     var chart = d3.select("body")
@@ -86,28 +91,93 @@ function setChart(csvStates, colorScale){
         .attr("height", chartHeight)
         .attr("class", "chart");
 
+    //create a rectangle for chart background fill
+    var chartBackground = chart.append("rect")
+        .attr("class", "chartBackground")
+        .attr("width", chartInnerWidth)
+        .attr("height", chartInnerHeight)
+        .attr("transform", translate);
 
     //create a scale to size bars proportionally to frame
     var yScale = d3.scaleLinear()
-        .range([0, chartHeight])
+        .range([463,0])
         .domain([0, 105]);
-        
-    //set bars for each province
-    var bars = chart.selectAll(".bars")
+
+        //set bars for each province
+    var bars = chart.selectAll(".bar")
+    .data(csvStates)
+    .enter()
+    .append("rect")
+    .sort(function(a, b){
+        return b[expressed]-a[expressed]
+    })
+    .attr("class", function(d){
+        return "bar " + d.name;
+    })
+    .attr("width", chartInnerWidth / csvStates.length - 1)
+    .attr("x", function(d, i){
+        return i * (chartInnerWidth / csvStates.length) + leftPadding;
+    })
+    // 
+    .attr("y", function(d){
+        console.log('expressed variable:', expressed);
+        console.log('expressed:', d[expressed], 'parsed:', parseFloat(d[expressed]));
+        console.log('data object:', d);
+
+         var height = yScale(parseFloat(d[expressed]));
+         console.log('height:', height);
+        return height;
+    })
+    .attr("height", function(d){
+        return chartHeight - yScale(parseFloat(d[expressed]));
+    })
+        .style("fill", function(d){
+            return colorScale(d[expressed]);
+        });
+
+        var numbers = chart.selectAll(".numbers")
         .data(csvStates)
         .enter()
-        .append("rect")
-        .attr("class", function(d){
-            return "bars " + d.name;
+        .append("text")
+        .sort(function(a, b){
+            return a[expressed]-b[expressed]
         })
-        .attr("width", chartWidth / csvStates.length - 1)
+        .attr("class", function(d){
+            return "numbers " + d.name;
+        })
+        .attr("text-anchor", "middle")
         .attr("x", function(d, i){
-            return i * (chartWidth / csvStates.length);
+            var fraction = chartWidth / csvStates.length;
+            return i * fraction + (fraction - 1) / 2;
         })
         .attr("y", function(d){
-            return chartHeight - yScale(parseFloat(d[expressed]));
+            return chartHeight - yScale(parseFloat(d[expressed])) +240;
+        })
+        .text(function(d){
+            return d[expressed];
         });
-        
+        var chartTitle = chart.append("text")
+        .attr("x", 20)
+        .attr("y", 40)
+        .attr("class", "chartTitle")
+        // .text("Number of Variable " + expressed[4] + " in each state");
+        .text("Percentage of adults age 25 and older with a Bachelor in Art in each state");
+        //create vertical axis generator
+    var yAxis = d3.axisLeft()
+    .scale(yScale);
+
+//place axis
+var axis = chart.append("g")
+    .attr("class", "axis")
+    .attr("transform", translate)
+    .call(yAxis);
+
+//create frame for chart border
+var chartFrame = chart.append("rect")
+    .attr("class", "chartFrame")
+    .attr("width", chartInnerWidth)
+    .attr("height", chartInnerHeight)
+    .attr("transform", translate);
     };
         
 function setGraticule(map, path){
@@ -203,30 +273,8 @@ function setEnumerationUnits(provinceLines, stateLines, map, path, colorScale){
     console.log('here');
     console.log(stateLines);
     console.log(stateLines.features[0].properties);
-    console.log(colorScale(0.5));
-    console.log(path(stateLines.features[0]));
    
-
-// var regions = map.selectAll(".regions")
-// .data(stateLines)
-// .enter()
-// .append("path")
-// .attr("class", function(d){
-//     return "regions " + d.properties.name;
-// })
-// .attr("d", path)
-// .style("fill", function(d){
-//     console.log('this one', d.properties[expressed]);
-//     return colorScale(d.properties[expressed]);
-// });
-
-// console.log(regions);
-// // Add state lines
-// map.selectAll(".state")
-//     .data(stateLines.features)
-//     .enter().append("path")
-//     .attr("class", "state")
-//     .attr("d", path);
+   
 
 // Calculate the minimum and maximum values of the expressed property
 var minExpressed = d3.min(provinceLines.features, function(d) { return d.properties[expressed]; });
@@ -246,7 +294,14 @@ map.selectAll(".province")
     .style("fill", function(d){
         return colorScale(d.properties[expressed]);
     });
-    ;
+    map.selectAll(".state")
+    .data(stateLines.features)
+    .enter().append("path")
+    .attr("class", "state")
+    .attr("d", path)
+    .style("fill", function(d){
+        return colorScale(d.properties[expressed]);
+    });
 };
 
 
