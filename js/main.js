@@ -492,7 +492,7 @@ var bars = d3.selectAll(".bar")
     // You need to modify these functions to accept and use the new attribute
     // setEnumerationUnits(provinceLines, stateLines, map, path, colorScale);
     setChart(csvStates, colorScale);
-    updateChart(bars, csvData.length, colorScale);
+    updateChart(bars, csvStates.length, colorScale);
     //function to position, size, and color bars in chart
 function updateChart(bars, n, colorScale){
     //position bars
